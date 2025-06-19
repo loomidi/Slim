@@ -1,0 +1,243 @@
+himport React, { useState, useEffect, useRef, useCallback } from 'react';
+
+// Icons (using lucide-react, but defining simple SVG for demonstration without full lucide setup)
+// In a real project with lucide-react installed, you'd import:
+// import { Save, Settings } from 'lucide-react';
+
+const SaveIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-save">
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+    <polyline points="17 21 17 13 7 13 7 21" />
+    <polyline points="7 3 7 8 15 8" />
+  </svg>
+);
+
+const SettingsIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.78 1.35a2 2 0 0 0 .73 2.73l.15.08a2 2 0 0 1 1 1.73v.44a2 2 0 0 0 2 2v.18a2 2 0 0 1 1 1.73l.43.25a2 2 0 0 1 2 0l.15-.08a2 2 0 0 0 2.73.73l.78-1.35a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.44a2 2 0 0 0-2-2v-.18a2 2 0 0 1-1-1.73l-.43-.25a2 2 0 0 1-2 0l-.15.08a2 2 0 0 0-2.73-.73l-.78-1.35a2 2 0 0 0 .73-2.73l.15-.08a2 2 0 0 1 1-1.73v-.44a2 2 0 0 0-2-2z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+
+function App() {
+  const [code, setCode] = useState(`-- Welcome to the Lua Neovim Chroma Weave!
+-- Type some Lua code below.
+-- Try 'function', 'local', 'if', 'end', 'true', 'false', 'nil', 'print', 'vim.api.nvim_set_option'.
+
+local function greet(name)
+  print("Hello, " .. name .. "!") -- This is a comment
+  if name == "World" then
+    vim.api.nvim_set_option('statusline', 'Welcome, World!')
+  else
+    -- A number: 123.45
+    -- A string: "another string"
+    local count = 10
+  end
+end
+
+greet("Lua User")
+`);
+  const [lineNumbers, setLineNumbers] = useState([]);
+  const [commandInput, setCommandInput] = useState('');
+  const [commandOutput, setCommandOutput] = useState('');
+  const editorRef = useRef(null);
+
+  // Function to highlight the code based on Lua/Neovim syntax
+  const highlightCode = useCallback((text) => {
+    // Keywords (Lua)
+    text = text.replace(/\b(and|break|do|else|elseif|end|false|for|function|if|in|local|nil|not|or|repeat|return|then|true|until|while)\b/g, '<span class="text-purple-400">$1</span>');
+    // Neovim API calls (e.g., vim.api.nvim_set_option)
+    text = text.replace(/(\bvim\.\w+(\.\w+)*\b)/g, '<span class="text-blue-400">$1</span>');
+    // Strings
+    text = text.replace(/("([^"\\]*(\\.[^"\\]*)*)"|'([^'\\]*(\\.[^'\\]*)*)')/g, '<span class="text-green-400">$1</span>');
+    // Numbers
+    text = text.replace(/\b(\d+(\.\d*)?([eE][+-]?\d+)?)\b/g, '<span class="text-orange-400">$1</span>');
+    // Comments
+    text = text.replace(/(--.*)/g, '<span class="text-gray-500 italic">$1</span>');
+
+    return text;
+  }, []);
+
+  // Effect to update line numbers and highlight code whenever the code state changes
+  useEffect(() => {
+    const lines = code.split('\n');
+    setLineNumbers(Array.from({ length: lines.length }, (_, i) => i + 1));
+
+    // Restore cursor position after updating contenteditable
+    const selection = window.getSelection();
+    const range = document.createRange();
+    const editor = editorRef.current;
+
+    // Save current cursor position
+    let caretOffset = 0;
+    if (selection.rangeCount > 0 && editor.contains(selection.anchorNode)) {
+      range.setStart(editor, 0);
+      range.setEnd(selection.anchorNode, selection.anchorOffset);
+      caretOffset = range.toString().length;
+    }
+
+    editor.innerHTML = highlightCode(code);
+
+    // Restore cursor position
+    if (caretOffset > 0) {
+      let charCount = 0;
+      let foundNode = null;
+      let foundOffset = 0;
+
+      function findNodeAndOffset(node) {
+        if (foundNode) return;
+
+        if (node.nodeType === Node.TEXT_NODE) {
+          const textLength = node.textContent.length;
+          if (charCount + textLength >= caretOffset) {
+            foundNode = node;
+            foundOffset = caretOffset - charCount;
+            return;
+          }
+          charCount += textLength;
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            findNodeAndOffset(node.childNodes[i]);
+            if (foundNode) return;
+          }
+        }
+      }
+
+      findNodeAndOffset(editor);
+
+      if (foundNode) {
+        range.setStart(foundNode, foundOffset);
+        range.setEnd(foundNode, foundOffset);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  }, [code, highlightCode]);
+
+  // Handle input changes in the contenteditable div
+  const handleInput = useCallback((event) => {
+    // Only update the code state with plain text to avoid issues with contenteditable's own formatting.
+    // The highlighting will re-apply on the next useEffect cycle.
+    setCode(event.currentTarget.innerText);
+  }, []);
+
+  // Handle command input and simulate Neovim commands
+  const handleCommandSubmit = useCallback((event) => {
+    if (event.key === 'Enter') {
+      const command = commandInput.trim();
+      let output = '';
+
+      switch (command) {
+        case ':w':
+          output = 'Wrote ' + code.length + ' bytes to buffer.';
+          break;
+        case ':q':
+          output = 'Exiting Neovim (simulated).';
+          break;
+        case ':wq':
+          output = 'Wrote and exited (simulated).';
+          break;
+        case ':help':
+          output = 'Try :w (write), :q (quit), :wq (write and quit).';
+          break;
+        default:
+          output = 'Unknown command: ' + command;
+      }
+      setCommandOutput(output);
+      setCommandInput(''); // Clear input after command
+    }
+  }, [commandInput, code]);
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-gray-200 font-mono flex flex-col items-center justify-center p-4">
+      <style>
+        {`
+          /* Custom scrollbar for a more "Neovim" feel */
+          ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+          ::-webkit-scrollbar-track {
+            background: #2d3748; /* Darker gray for track */
+            border-radius: 4px;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: #4a5568; /* Medium gray for thumb */
+            border-radius: 4px;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* Lighter gray on hover */
+          }
+
+          /* Ensure contenteditable does not add newlines when pasting */
+          [contenteditable="true"] br {
+            display: none;
+          }
+          [contenteditable="true"] div {
+            display: inline;
+          }
+        `}
+      </style>
+
+      {/* Header and Controls */}
+      <div className="w-full max-w-4xl flex justify-between items-center mb-4 text-gray-400">
+        <h1 className="text-xl font-bold text-teal-400">LuaNeovim Chroma Weave</h1>
+        <div className="flex space-x-4">
+          <button className="flex items-center space-x-1 hover:text-white transition-colors duration-200 focus:outline-none">
+            <SaveIcon className="w-5 h-5" />
+            <span>Save</span>
+          </button>
+          <button className="flex items-center space-x-1 hover:text-white transition-colors duration-200 focus:outline-none">
+            <SettingsIcon className="w-5 h-5" />
+            <span>Settings</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Editor Area */}
+      <div className="relative w-full max-w-4xl bg-gray-800 rounded-lg shadow-lg flex overflow-hidden min-h-[500px]">
+        {/* Line Numbers */}
+        <div className="flex-shrink-0 w-12 bg-gray-700 text-gray-500 p-3 pr-2 text-right select-none leading-relaxed overflow-y-auto" style={{ scrollbarWidth: 'none' /* Hide scrollbar for this div */ }}>
+          {lineNumbers.map((num, index) => (
+            <div key={index} className="h-[1.5rem]">{num}</div> // Adjust height to match line-height of editor
+          ))}
+        </div>
+
+        {/* Code Editor */}
+        <div
+          ref={editorRef}
+          contentEditable="true"
+          onInput={handleInput}
+          spellCheck="false"
+          className="flex-grow p-3 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-teal-500 rounded-r-lg overflow-y-auto resize-none whitespace-pre-wrap font-mono"
+          style={{ tabSize: 4 }} // Simulate tab size
+        >
+          {/* Content is set by useEffect */}
+        </div>
+      </div>
+
+      {/* Command Line */}
+      <div className="w-full max-w-4xl bg-gray-800 rounded-lg shadow-lg mt-4 p-3 flex items-center">
+        <span className="text-gray-400 text-lg mr-2">:</span>
+        <input
+          type="text"
+          className="flex-grow bg-transparent outline-none text-gray-200 text-sm font-mono"
+          placeholder="Enter Neovim command (e.g., w, q, wq, help)"
+          value={commandInput}
+          onChange={(e) => setCommandInput(e.target.value)}
+          onKeyDown={handleCommandSubmit}
+        />
+      </div>
+
+      {/* Command Output */}
+      {commandOutput && (
+        <div className="w-full max-w-4xl bg-gray-700 rounded-lg shadow-lg mt-2 p-3 text-gray-300 text-sm font-mono">
+          <span className="text-teal-400 mr-2">OUTPUT:</span>{commandOutput}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
