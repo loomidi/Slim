@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from 'react';
+import { Play, Clipboard, MessageCircle, GitFork, AlertTriangle, Database, Lightbulb } from 'lucide-react'; // Using lucide-react for icons
+
+// Main App component
+const App = () => {
+  const [userRequest, setUserRequest] = useState('');
+  const [subAgentStatus, setSubAgentStatus] = useState('');
+  const [delegatedTasks, setDelegatedTasks] = useState([]);
+  const [progressReports, setProgressReports] = useState([]);
+  const [systemState, setSystemState] = useState('Idle');
+  const [conflictResolved, setConflictResolved] = useState(false);
+
+  // Simulate task decomposition and delegation
+  const handleProcessRequest = () => {
+    if (!userRequest.trim()) {
+      alert("Please enter a user request."); // Using a simple alert for demo purposes
+      return;
+    }
+
+    setSystemState('Processing Request...');
+    setDelegatedTasks([]);
+    setProgressReports([]);
+    setConflictResolved(false);
+
+    // Simulate task decomposition
+    const decomposedTasks = [
+      `Decomposed: Design logic for "${userRequest}" (to Designer Agent)`,
+      `Decomposed: Generate assets for "${userRequest}" (to Asset Generation AI)`,
+      `Decomposed: Code implementation for "${userRequest}" (to Code Generation AI)`,
+      `Decomposed: UI/UX for "${userRequest}" (to UI/UX Agent)`,
+      `Decomposed: Optimize performance for "${userRequest}" (to Network & Performance AI)`,
+      `Decomposed: Research related concepts for "${userRequest}" (to Knowledge & Research AI)`,
+      `Decomposed: Generate VFX for "${userRequest}" (to Graphics & VFX AI)`,
+      `Decomposed: Validate and secure operations for "${userRequest}" (to Security Layer)`,
+    ];
+    setDelegatedTasks(decomposedTasks);
+
+    // Simulate progress updates
+    const newProgress = [`Received user request: "${userRequest}"`];
+    setProgressReports(prev => [...prev, ...newProgress]);
+
+    setTimeout(() => {
+      setProgressReports(prev => [...prev, "Delegating tasks to sub-agents..."]);
+      setSystemState('Tasks Delegated');
+      setUserRequest(''); // Clear input after processing
+    }, 2000);
+  };
+
+  // Simulate sub-agent status updates and progress tracking
+  const handleSubAgentStatus = () => {
+    if (!subAgentStatus.trim()) {
+      alert("Please enter sub-agent status.");
+      return;
+    }
+
+    setProgressReports(prev => [...prev, `Sub-agent reported: ${subAgentStatus}`]);
+
+    // Simulate conflict resolution based on keywords
+    if (subAgentStatus.toLowerCase().includes('conflict') || subAgentStatus.toLowerCase().includes('error')) {
+      setProgressReports(prev => [...prev, "Conflict detected! Attempting to resolve..."]);
+      setTimeout(() => {
+        setProgressReports(prev => [...prev, "Conflict resolved: Adjusted task dependencies and re-queued affected modules."]);
+        setConflictResolved(true);
+      }, 3000);
+    }
+    setSubAgentStatus(''); // Clear input
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-gray-100 p-6 font-sans">
+      <div className="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
+        <h1 className="text-4xl font-extrabold text-center text-purple-400 mb-8 tracking-wide">
+          <Play className="inline-block mr-3 text-purple-500" size={36} /> Main Manager AI (Orchestrator)
+        </h1>
+
+        {/* System State */}
+        <div className="mb-8 p-4 bg-gray-700 rounded-lg shadow-inner text-center">
+          <h2 className="text-xl font-semibold text-gray-300 mb-2">System State:</h2>
+          <p className={`text-2xl font-bold ${systemState === 'Idle' ? 'text-blue-400' : systemState === 'Processing Request...' ? 'text-yellow-400' : 'text-green-400'}`}>
+            {systemState}
+          </p>
+        </div>
+
+        {/* Responsibilities Section */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-teal-400 mb-4 flex items-center">
+            <Clipboard className="mr-2" size={24} /> Responsibilities
+          </h2>
+          <ul className="list-disc list-inside space-y-2 text-lg text-gray-200">
+            <li><span className="font-semibold text-white">Task Decomposition:</span> Breaking down complex user requests into smaller, manageable sub-tasks.</li>
+            <li><span className="font-semibold text-white">Agent Coordination:</span> Assigning tasks, managing dependencies, ensuring sequential/parallel execution.</li>
+            <li><span className="font-semibold text-white">Progress Tracking & Feedback:</span> Monitoring status, aggregating results, real-time updates.</li>
+            <li><span className="font-semibold text-white">Conflict Resolution:</span> Identifying and resolving inconsistencies between agent outputs.</li>
+            <li><span className="font-semibold text-white">Overall System State Management:</span> Maintaining coherent understanding of the project.</li>
+          </ul>
+        </div>
+
+        {/* Inputs Section */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-indigo-400 mb-4 flex items-center">
+            <MessageCircle className="mr-2" size={24} /> Inputs
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="userRequest" className="block text-lg font-medium text-gray-300 mb-2">High-level User Request:</label>
+              <textarea
+                id="userRequest"
+                className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+                rows="3"
+                placeholder="e.g., Create a 2D platformer template with a sci-fi theme"
+                value={userRequest}
+                onChange={(e) => setUserRequest(e.target.value)}
+              ></textarea>
+              <button
+                onClick={handleProcessRequest}
+                className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
+              >
+                Process User Request
+              </button>
+            </div>
+            <div>
+              <label htmlFor="subAgentStatus" className="block text-lg font-medium text-gray-300 mb-2">Status Updates from Sub-agents:</label>
+              <input
+                type="text"
+                id="subAgentStatus"
+                className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="e.g., Designer Agent finished template generation"
+                value={subAgentStatus}
+                onChange={(e) => setSubAgentStatus(e.target.value)}
+              />
+              <button
+                onClick={handleSubAgentStatus}
+                className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
+              >
+                Submit Sub-agent Status
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Outputs Section */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-green-400 mb-4 flex items-center">
+            <GitFork className="mr-2" size={24} /> Outputs
+          </h2>
+          <div className="space-y-6">
+            {/* Delegated Tasks */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-300 mb-2">Delegated Tasks:</h3>
+              {delegatedTasks.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-gray-200 bg-gray-700 p-4 rounded-lg">
+                  {delegatedTasks.map((task, index) => (
+                    <li key={index}>{task}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-400 italic bg-gray-700 p-4 rounded-lg">No tasks delegated yet.</p>
+              )}
+            </div>
+
+            {/* Progress Reports */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-300 mb-2">Progress Reports:</h3>
+              {progressReports.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-gray-200 bg-gray-700 p-4 rounded-lg">
+                  {progressReports.map((report, index) => (
+                    <li key={index} className={report.includes('Conflict resolved') ? 'text-green-300' : ''}>{report}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-400 italic bg-gray-700 p-4 rounded-lg">No progress reports yet.</p>
+              )}
+              {conflictResolved && (
+                <div className="mt-4 p-3 bg-green-800 text-green-200 rounded-lg flex items-center">
+                  <AlertTriangle className="mr-2" size={20} />
+                  <span>Conflict resolution demonstrated!</span>
+                </div>
+              )}
+            </div>
+
+            {/* Aggregated Project Status & Final Output (Simulated) */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-300 mb-2">Aggregated Project Status & Final Output:</h3>
+              <p className="text-gray-400 italic bg-gray-700 p-4 rounded-lg">
+                (This would display a summary of the project state, e.g., "Game Template v1.0 generated, 80% assets complete, link to GitHub repo: [simulated_link]")
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Key Technologies/Considerations */}
+        <div>
+          <h2 className="text-2xl font-bold text-yellow-400 mb-4 flex items-center">
+            <Lightbulb className="mr-2" size={24} /> Key Technologies/Considerations
+          </h2>
+          <ul className="list-disc list-inside space-y-2 text-lg text-gray-200 bg-gray-700 p-6 rounded-lg shadow-inner">
+            <li><span className="font-semibold text-white">Powerful LLM:</span> For natural language understanding, reasoning, task planning.</li>
+            <li><span className="font-semibold text-white">Agentic Framework:</span> (e.g., Microsoft AutoGen, LangChain, CrewAI) for multi-agent workflows.</li>
+            <li><span className="font-semibold text-white">Internal State Management System:</span> (e.g., knowledge graph, structured database) to track project details.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
+
