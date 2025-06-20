@@ -1,0 +1,802 @@
+hAh, I see! You're connecting the metaphorical "Hermes" that acts as a secure handler with the idea of it actively performing "errands" – a log of its activities. And the "floating tile window with snap folding" on a finger snap is a fantastic UI concept, blending a futuristic interface with intuitive interaction!
+While I cannot directly implement "snap folding" with a finger snap (as that requires advanced hardware and direct gesture recognition capabilities not available to an AI in a text interface), I can absolutely design the React component structure and the conceptual logic for such a "Hermes Log" floating tile.
+We'll use standard React practices for the floating window and a state-driven approach for showing/hiding it. The "snap of my fingers" part would typically be handled by:
+ * For web applications: Browser APIs for microphone input (voice command like "Hermes log!") combined with a speech recognition library, or a specialized webcam/computer vision library to detect a physical gesture. These are complex and out of scope for a direct code example, but important to note for real-world implementation.
+ * For desktop/native apps: OS-level gesture APIs or external hardware integration.
+Let's focus on the React component that displays the log and can be programmatically shown/hidden.
+Here's the plan:
+ * State for Visibility: A useState hook to control whether the log window is visible.
+ * Log Data State: A useState to store the "errands" (log entries) Hermes has performed. We'll simulate some entries for demonstration.
+ * Floating Window Styling: CSS to position the window, make it appear "floating," and give it the Ophanim aesthetic.
+ * Snap/Fold Effect (Simulated): We'll use CSS transitions for a smooth fade/scale in/out effect when it appears/disappears, mimicking a "snap" action.
+ * Log Display: A simple list to display the log entries.
+ * "Finger Snap" Trigger (Conceptual/Button): For this example, we'll use a button to toggle visibility. In a real app, this would be replaced by your gesture recognition logic.
+HermesLog.js (New Component)
+First, let's create a new React component file for our Hermes Log:
+src/components/HermesLog.js
+import React, { useState, useEffect, useRef } from 'react';
+
+// This would be your real Hermes log data, perhaps fetched from a backend
+// For this example, we'll use simulated data.
+const initialHermesErrands = [
+    { id: 1, timestamp: new Date('2025-06-20T08:00:00Z'), task: 'Fetched Gemini API key from Vault.', status: 'SUCCESS', details: 'Key ID: g-api-prod-001' },
+    { id: 2, timestamp: new Date('2025-06-20T08:01:15Z'), task: 'Initiated Ophanim Security Blanket scan for /app/core_service.py.', status: 'PENDING', details: 'Scan ID: OSB-78901' },
+    { id: 3, timestamp: new Date('2025-06-20T08:02:30Z'), task: 'Delivered scan results (OSB-78901) to dashboard.', status: 'SUCCESS', details: 'Findings: No critical vulnerabilities.' },
+    { id: 4, timestamp: new Date('2025-06-20T08:05:00Z'), task: 'Requested Hummingbird analysis for IP: 192.168.5.20.', status: 'SUCCESS', details: 'Analysis ID: HMB-23456' },
+    { id: 5, timestamp: new Date('2025-06-20T08:06:45Z'), task: 'Forwarded incoming network traffic logs to Honeypot VM.', status: 'INFO', details: 'Source: 172.16.0.100' },
+    { id: 6, timestamp: new Date('2025-06-20T08:10:00Z'), task: 'Received analysis report (HMB-23456) from Hummingbird.', status: 'SUCCESS', details: 'Report: Minor anomaly detected in port 8080 traffic.' },
+    { id: 7, timestamp: new Date('2025-06-20T08:12:30Z'), task: 'Attempted to block IP 203.0.113.45.', status: 'FAILURE', details: 'Reason: Firewall rule conflict. Retrying.' },
+];
+
+
+const HermesLog = ({ isVisible, toggleVisibility }) => {
+    const [errands, setErrands] = useState(initialHermesErrands);
+    const logContainerRef = useRef(null);
+
+    // Simulate new errands being added over time (for demonstration)
+    useEffect(() => {
+        const addErrandInterval = setInterval(() => {
+            const newId = errands.length > 0 ? Math.max(...errands.map(e => e.id)) + 1 : 1;
+            const newErrand = {
+                id: newId,
+                timestamp: new Date(),
+                task: `Checked system health and reported status to central node.`,
+                status: Math.random() > 0.1 ? 'SUCCESS' : 'WARNING', // Simulate occasional warnings
+                details: `CPU: ${Math.floor(Math.random() * 20) + 10}%, Mem: ${Math.floor(Math.random() * 20) + 25}%`
+            };
+            setErrands(prev => [...prev, newErrand]);
+        }, 10000); // Add a new errand every 10 seconds
+
+        return () => clearInterval(addErrandInterval);
+    }, [errands]); // Re-run effect if errands change to update max ID calculation
+
+    // Scroll to bottom when new errands arrive
+    useEffect(() => {
+        if (logContainerRef.current) {
+            logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+        }
+    }, [errands]);
+
+    return (
+        <>
+            <style>
+                {`
+                .hermes-log-container {
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    width: 380px; /* Adjust width as needed */
+                    height: 500px; /* Adjust height as needed */
+                    background-color: #1a202c; /* Dark background */
+                    border: 1px solid #2d3748; /* Border */
+                    border-radius: 0.75rem;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+                    z-index: 1000; /* High z-index to stay on top */
+                    padding: 1rem;
+                    display: flex;
+                    flex-direction: column;
+                    transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* For snap folding */
+                }
+
+                .hermes-log-container.hidden {
+                    transform: scale(0.8) translateY(50px);
+                    opacity: 0;
+                    pointer-events: none; /* Make it unclickable when hidden */
+                }
+
+                .hermes-log-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 1px solid #4a5568;
+                }
+
+                .hermes-log-content {
+                    flex-grow: 1;
+                    overflow-y: auto;
+                    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+                    font-size: 0.85rem;
+                    color: #e2e8f0; /* Light text color */
+                    padding-right: 0.5rem; /* For scrollbar spacing */
+                }
+
+                .hermes-log-entry {
+                    margin-bottom: 0.75rem;
+                    padding: 0.5rem;
+                    background-color: #2d3748;
+                    border-left: 3px solid; /* Dynamic border color */
+                    border-radius: 0.25rem;
+                    position: relative;
+                }
+
+                .hermes-log-entry.SUCCESS { border-color: #48bb78; } /* Green */
+                .hermes-log-entry.PENDING { border-color: #ecc94b; } /* Yellow */
+                .hermes-log-entry.FAILURE { border-color: #e53e3e; } /* Red */
+                .hermes-log-entry.INFO { border-color: #63b3ed; }    /* Blue */
+                .hermes-log-entry.WARNING { border-color: #ed8936; } /* Orange */
+
+                .hermes-log-entry-timestamp {
+                    font-size: 0.7rem;
+                    color: #a0aec0; /* Gray timestamp */
+                    margin-bottom: 0.25rem;
+                }
+
+                .hermes-log-entry-task {
+                    font-weight: 500;
+                    color: #cbd5e0;
+                    margin-bottom: 0.25rem;
+                }
+
+                .hermes-log-entry-details {
+                    font-size: 0.75rem;
+                    color: #a0aec0;
+                }
+                `}
+            </style>
+
+            <div className={`hermes-log-container ${isVisible ? '' : 'hidden'}`}>
+                <div className="hermes-log-header">
+                    <h3 className="text-xl font-bold text-blue-300 flex items-center">
+                        <i className="fas fa-paper-plane mr-2"></i> Hermes Log
+                    </h3>
+                    <button
+                        onClick={toggleVisibility}
+                        className="bg-gray-600 hover:bg-gray-500 text-gray-100 py-1 px-3 rounded-md text-sm transition duration-200"
+                        title="Close Log"
+                    >
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+                <div ref={logContainerRef} className="hermes-log-content">
+                    {errands.length === 0 ? (
+                        <p className="text-gray-500 text-center mt-4">No errands logged yet.</p>
+                    ) : (
+                        errands.map(errand => (
+                            <div key={errand.id} className={`hermes-log-entry ${errand.status}`}>
+                                <div className="hermes-log-entry-timestamp">
+                                    {errand.timestamp.toLocaleString()}
+                                </div>
+                                <div className="hermes-log-entry-task">{errand.task}</div>
+                                {errand.details && (
+                                    <div className="hermes-log-entry-details">{errand.details}</div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default HermesLog;
+
+Integrate into App.js
+Now, you need to import and use this component in your main App.js file.
+src/App.js (Modifications)
+import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+
+// Import the new HermesLog component
+import HermesLog from './components/HermesLog'; // Adjust path if needed
+
+// Global variables from Canvas environment
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+// Mock UUID for anonymous users if not signed in with Firebase Auth
+const generateUserId = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
+const App = () => {
+    const [db, setDb] = useState(null);
+    const [auth, setAuth] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [isAuthReady, setIsAuthReady] = useState(false);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const chatContainerRef = useRef(null);
+    const [showToolbox, setShowToolbox] = useState(false);
+    const [scanInput, setScanInput] = useState('');
+    const [scanResult, setScanResult] = useState('');
+    const [scanLoading, setScanLoading] = useState(false);
+    const [targetedLocation, setTargetedLocation] = useState('');
+    const [targetedResult, setTargetedResult] = useState('');
+    const [targetedLoading, setTargetedLoading] = useState(false);
+
+    // New states for Ophanim Terminal
+    const [terminalInput, setTerminalInput] = useState('');
+    const [terminalOutput, setTerminalOutput] = useState([]);
+    const [terminalLoading, setTerminalLoading] = useState(false);
+    const terminalOutputRef = useRef(null); // Ref for terminal output scrolling
+
+    // New state for Hermes Log visibility
+    const [showHermesLog, setShowHermesLog] = useState(false);
+
+    // Initialize Firebase and Auth
+    useEffect(() => {
+        try {
+            const app = initializeApp(firebaseConfig);
+            const firestoreDb = getFirestore(app);
+            const firebaseAuth = getAuth(app);
+            setDb(firestoreDb);
+            setAuth(firebaseAuth);
+
+            onAuthStateChanged(firebaseAuth, async (user) => {
+                if (user) {
+                    setUserId(user.uid);
+                } else if (initialAuthToken) {
+                    try {
+                        // Ensure signInWithCustomToken is imported and used correctly
+                        await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                        setUserId(firebaseAuth.currentUser?.uid);
+                    } catch (error) {
+                        console.error("Error signing in with custom token:", error);
+                        await signInAnonymously(firebaseAuth); // Fallback to anonymous
+                        setUserId(firebaseAuth.currentUser?.uid || generateUserId());
+                    }
+                } else {
+                    await signInAnonymously(firebaseAuth);
+                    setUserId(firebaseAuth.currentUser?.uid || generateUserId());
+                }
+                setIsAuthReady(true);
+            });
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            setIsAuthReady(true); // Allow UI to load even if Firebase fails
+            setUserId(generateUserId()); // Use a mock ID if Firebase init fails
+        }
+    }, []);
+
+    // Subscribe to chat messages
+    useEffect(() => {
+        if (db && isAuthReady) {
+            const chatCollectionRef = collection(db, `artifacts/${appId}/public/data/chatMessages`);
+            const q = query(chatCollectionRef, orderBy('timestamp', 'asc'));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const messages = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setChatMessages(messages);
+                // Scroll to bottom when new messages arrive
+                if (chatContainerRef.current) {
+                    chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                }
+            }, (error) => {
+                console.error("Error fetching chat messages:", error);
+            });
+
+            return () => unsubscribe();
+        }
+    }, [db, isAuthReady, appId]);
+
+    // Effect for scrolling terminal output to bottom
+    useEffect(() => {
+        if (terminalOutputRef.current) {
+            terminalOutputRef.current.scrollTop = terminalOutputRef.current.scrollHeight;
+        }
+    }, [terminalOutput]);
+
+
+    const handleSendMessage = async () => {
+        if (!newMessage.trim() || !db || !userId) return;
+
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/chatMessages`), {
+                senderId: userId,
+                content: newMessage,
+                timestamp: serverTimestamp(),
+            });
+            setNewMessage('');
+        } catch (e) {
+            console.error("Error adding document: ", e);
+            // Display a user-friendly message instead of alert()
+        }
+    };
+
+    // Simulated "Ophanim Security Blanket" scan via Gemini API
+    const runOphanimScan = async () => {
+        if (!scanInput.trim()) {
+            setScanResult("Please provide input for the scan (e.g., file path, process ID, URL).");
+            return;
+        }
+
+        setScanLoading(true);
+        setScanResult('Running Ophanim Security Blanket scan...');
+
+        try {
+            let chatHistory = [];
+            const prompt = `You are an advanced security scanning agent named "Ophanim Security Blanket". Analyze the following input for potential bugs, hidden Trojans, or vulnerabilities. Provide a concise, professional security report. If the input is a mock file path or URL, describe plausible findings. Input: "${scanInput}"`;
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            // IMPORTANT: Replace "YOUR_GEMINI_API_KEY" with your actual Gemini API Key
+            const apiKey = "YOUR_GEMINI_API_KEY";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                setScanResult(text);
+            } else {
+                setScanResult("Failed to get a valid scan result. The AI response was empty or malformed.");
+            }
+        } catch (error) {
+            console.error("Error during Ophanim scan:", error);
+            setScanResult(`Error performing scan: ${error.message}. Please try again.`);
+        } finally {
+            setScanLoading(false);
+        }
+    };
+
+    // Simulated "Hummingbird" targeted analysis via Gemini API
+    const runHummingbirdAnalysis = async () => {
+        if (!targetedLocation.trim()) {
+            setTargetedResult("Please provide a specific location for targeted analysis.");
+            return;
+        }
+
+        setTargetedLoading(true);
+        setTargetedResult('Initiating Hummingbird precise analysis...');
+
+        try {
+            let chatHistory = [];
+            const prompt = `You are a highly precise security analysis tool named "Hummingbird Pencil Beak Stylus". Perform a very focused and deep analysis on the following "location" or identifier, identifying subtle anomalies, stealthy threats, or precise vulnerabilities. Provide a detailed, technical, yet concise report. Location/Identifier: "${targetedLocation}".`;
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            // IMPORTANT: Replace "YOUR_GEMINI_API_KEY" with your actual Gemini API Key
+            const apiKey = "YOUR_GEMINI_API_KEY";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                setTargetedResult(text);
+            } else {
+                setTargetedResult("Failed to get a valid analysis result. The AI response was empty or malformed.");
+            }
+        } catch (error) {
+            console.error("Error during Hummingbird analysis:", error);
+            setTargetedResult(`Error performing analysis: ${error.message}. Please try again.`);
+        } finally {
+            setTargetedLoading(false);
+        }
+    };
+
+    // New function for Ophanim Terminal command execution
+    const executeTerminalCommand = async () => {
+        const command = terminalInput.trim();
+        if (!command) return;
+
+        setTerminalOutput(prev => [...prev, { type: 'command', text: `$ ${command}` }]);
+        setTerminalInput('');
+        setTerminalLoading(true);
+
+        try {
+            let chatHistory = [];
+            const prompt = `You are an "Ophanim Security Agent Terminal". Interpret the following user command, simulate its execution in a security context, and provide a realistic, concise output. If it's a known security command (e.g., 'scan --file', 'monitor --network', 'analyze --process'), provide a relevant security-focused response. If it's a general command (e.g., 'help', 'status', 'ping'), provide an appropriate system response. Be technical but understandable. Command: "${command}"`;
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            // IMPORTANT: Replace "YOUR_GEMINI_API_KEY" with your actual Gemini API Key
+            const apiKey = "YOUR_GEMINI_API_KEY";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                setTerminalOutput(prev => [...prev, { type: 'response', text: text }]);
+            } else {
+                setTerminalOutput(prev => [...prev, { type: 'response', text: "Error: Could not get a valid response from Ophanim AI." }]);
+            }
+        } catch (error) {
+            console.error("Error executing terminal command:", error);
+            setTerminalOutput(prev => [...prev, { type: 'response', text: `Error: ${error.message}. Please try again.` }]);
+        } finally {
+            setTerminalLoading(false);
+        }
+    };
+
+
+    return (
+        <div className="min-h-screen bg-gray-900 text-gray-100 p-4 font-inter antialiased flex flex-col items-center">
+            <script src="https://cdn.tailwindcss.com"></script>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
+            {/* Added Font Awesome for icons */}
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></link>
+
+            <style>
+                {`
+                body { font-family: 'Inter', sans-serif; }
+                .tile {
+                    background-color: #1a202c; /* Darker background for tiles */
+                    border: 1px solid #2d3748; /* Border for separation */
+                    border-radius: 0.5rem;
+                    padding: 1.5rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+                }
+                .tile:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+                }
+                .chat-message-bubble {
+                    max-width: 75%;
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.75rem;
+                    margin-bottom: 0.5rem;
+                }
+                .chat-message-bubble.sender {
+                    background-color: #2b6cb0; /* Blue for sender */
+                    align-self: flex-end;
+                    margin-left: auto;
+                }
+                .chat-message-bubble.other {
+                    background-color: #4a5568; /* Gray for others */
+                    align-self: flex-start;
+                    margin-right: auto;
+                }
+                .btn-primary {
+                    @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out;
+                }
+                .btn-secondary {
+                    @apply bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out;
+                }
+                .terminal-output {
+                    background-color: #000;
+                    color: #0F0;
+                    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+                    font-size: 0.875rem;
+                    border-radius: 0.5rem;
+                    padding: 1rem;
+                    overflow-y: auto;
+                    height: 200px; /* Fixed height for terminal output */
+                    white-space: pre-wrap; /* Preserve whitespace and wrap text */
+                }
+                .terminal-input {
+                    background-color: #2d3748;
+                    color: #0F0;
+                    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+                    border: 1px solid #4a5568;
+                    border-radius: 0.25rem;
+                    padding: 0.75rem;
+                    width: 100%;
+                    box-sizing: border-box;
+                    outline: none;
+                }
+                `}
+            </style>
+
+            <header className="w-full max-w-4xl text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2">Ophanim Security Agent</h1>
+                <p className="text-xl text-blue-400">Protection and Security Dashboard</p>
+                <div className="text-xs text-gray-500 mt-2">
+                    User ID: {userId || 'Loading...'}
+                </div>
+                {/* Button to toggle Hermes Log visibility */}
+                <button
+                    onClick={() => setShowHermesLog(!showHermesLog)}
+                    className="btn-secondary mt-4 flex items-center justify-center mx-auto"
+                >
+                    <i className="fas fa-paper-plane mr-2"></i> Toggle Hermes Log
+                </button>
+            </header>
+
+            <main className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {/* Tile 1: UWB/WiFi Brute Force Detector */}
+                <div className="tile flex flex-col justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold mb-2 text-blue-300 flex items-center"><i className="fas fa-wifi mr-2"></i>WiFi Security Status</h2>
+                        <p className="text-lg text-green-400 font-bold">ACTIVE</p>
+                        <p className="text-sm text-gray-400 mt-1">Monitoring UWB & WiFi for brute force attempts.</p>
+                    </div>
+                    <div className="mt-4 text-sm text-gray-500">
+                        Last Check: {new Date().toLocaleTimeString()}
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div className="bg-green-500 h-2 rounded-full" style={{ width: '90%' }}></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tile 2: Virtual Machine Honeypot Monitor */}
+                <div className="tile flex flex-col justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold mb-2 text-blue-300 flex items-center"><i className="fas fa-server mr-2"></i>Honeypot Monitor</h2>
+                        <p className="text-lg text-yellow-400 font-bold">DEPLOYED</p>
+                        <p className="text-sm text-gray-400 mt-1">VM Honeypot (IP: 192.168.1.10) active and logging.</p>
+                    </div>
+                    <div className="mt-4 text-sm text-gray-500">
+                        Threat Activity: <span className="text-yellow-300">Moderate</span>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tile 3: Hidden Trojan/Bug Scanner Status */}
+                <div className="tile flex flex-col justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold mb-2 text-blue-300 flex items-center"><i className="fas fa-bug mr-2"></i>Trojan & Bug Scan</h2>
+                        <p className="text-lg text-purple-400 font-bold">SCAN READY</p>
+                        <p className="text-sm text-gray-400 mt-1">Ophanim Security Blanket awaiting command.</p>
+                    </div>
+                    <div className="mt-4 text-sm text-gray-500">
+                        Last Full Scan: 2 hours ago
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div className="bg-purple-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tile 4: System Health & Performance */}
+                <div className="tile flex flex-col justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold mb-2 text-blue-300 flex items-center"><i className="fas fa-heartbeat mr-2"></i>Agent Health</h2>
+                        <p className="text-lg text-green-400 font-bold">OPTIMAL</p>
+                        <p className="text-sm text-gray-400 mt-1">All agent components running smoothly.</p>
+                    </div>
+                    <div className="mt-4 text-sm text-gray-500">
+                        CPU Usage: 15% | Memory: 30%
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tile 5: Network Activity Overview */}
+                <div className="tile flex flex-col justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold mb-2 text-blue-300 flex items-center"><i className="fas fa-network-wired mr-2"></i>Network Traffic</h2>
+                        <p className="text-lg text-gray-300 font-bold">NORMAL</p>
+                        <p className="text-sm text-gray-400 mt-1">Inbound/Outbound traffic within baselines.</p>
+                    </div>
+                    <div className="mt-4 text-sm text-gray-500">
+                        Anomalies: <span className="text-green-400">0</span>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div className="bg-green-500 h-2 rounded-full" style={{ width: '95%' }}></div>
+                        </div>
+                    </div>
+                </div>
+
+                 {/* Tile 6: OWASP Compliance */}
+                 <div className="tile flex flex-col justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold mb-2 text-blue-300 flex items-center"><i className="fas fa-shield-alt mr-2"></i>OWASP Compliance</h2>
+                        <p className="text-lg text-green-400 font-bold">HIGH</p>
+                        <p className="text-sm text-gray-400 mt-1">Application security posture aligned with OWASP Top 10.</p>
+                    </div>
+                    <div className="mt-4 text-sm text-gray-500">
+                        Last Audit: 3 days ago
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div className="bg-green-500 h-2 rounded-full" style={{ width: '88%' }}></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <section className="w-full max-w-4xl bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
+                <h2 className="text-2xl font-semibold text-white mb-4 flex items-center"><i className="fas fa-comments mr-2 text-blue-400"></i>Agent Chat</h2>
+                <div ref={chatContainerRef} className="h-64 overflow-y-auto bg-gray-900 rounded-lg p-4 mb-4 flex flex-col" style={{ scrollBehavior: 'smooth' }}>
+                    {chatMessages.length === 0 && <p className="text-gray-500 text-center">No messages yet. Say hello!</p>}
+                    {chatMessages.map((msg) => (
+                        <div key={msg.id} className={`chat-message-bubble ${msg.senderId === userId ? 'sender' : 'other'}`}>
+                            <p className="text-sm text-gray-300 mb-1">{msg.senderId === userId ? 'You' : `User ${msg.senderId.substring(0, 8)}`}</p>
+                            <p className="text-gray-100">{msg.content}</p>
+                            <span className="text-xs text-gray-400 float-right mt-1">
+                                {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString() : 'Sending...'}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex">
+                    <input
+                        type="text"
+                        className="flex-grow bg-gray-700 text-gray-100 border border-gray-600 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Type your message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    />
+                    <button onClick={handleSendMessage} className="btn-primary rounded-l-none">
+                        <i className="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </section>
+
+            {/* Ophanim Terminal Helper Widget */}
+            <section className="w-full max-w-4xl bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
+                <h2 className="text-2xl font-semibold text-white mb-4 flex items-center"><i className="fas fa-terminal mr-2 text-green-400"></i>Ophanim Terminal</h2>
+                <div ref={terminalOutputRef} className="terminal-output mb-4">
+                    {terminalOutput.length === 0 && <p>Type 'help' for commands or start your security inquiries.</p>}
+                    {terminalOutput.map((line, index) => (
+                        <div key={index} className={line.type === 'command' ? 'text-green-300' : 'text-green-500'}>
+                            {line.text}
+                        </div>
+                    ))}
+                    {terminalLoading && <div className="text-gray-400">_</div>} {/* Blinking cursor effect */}
+                </div>
+                <div className="flex">
+                    <input
+                        type="text"
+                        className="terminal-input flex-grow rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Enter command..."
+                        value={terminalInput}
+                        onChange={(e) => setTerminalInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && !terminalLoading && executeTerminalCommand()}
+                        disabled={terminalLoading}
+                    />
+                    <button
+                        onClick={executeTerminalCommand}
+                        className="btn-primary rounded-l-none bg-green-600 hover:bg-green-700"
+                        disabled={terminalLoading}
+                    >
+                        {terminalLoading ? (
+                            <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                            <i className="fas fa-play"></i>
+                        )}
+                    </button>
+                </div>
+            </section>
+
+
+            <section className="w-full max-w-4xl bg-gray-800 rounded-lg shadow-xl p-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-semibold text-white flex items-center"><i className="fas fa-tools mr-2 text-blue-400"></i>Security Toolbox</h2>
+                    <button onClick={() => setShowToolbox(!showToolbox)} className="btn-secondary">
+                        {showToolbox ? 'Hide Tools' : 'Show Tools'}
+                    </button>
+                </div>
+
+                {showToolbox && (
+                    <div className="mt-6 space-y-6">
+                        {/* Ophanim Security Blanket Tool */}
+                        <div className="bg-gray-700 p-5 rounded-lg border border-gray-600">
+                            <h3 className="text-xl font-medium text-blue-300 mb-3 flex items-center"><i className="fas fa-search-dollar mr-2"></i>Ophanim Security Blanket Scanner</h3>
+                            <p className="text-gray-400 mb-4 text-sm">Perform a deep scan for hidden Trojans and vulnerabilities using the advanced Ophanim engine.</p>
+                            <input
+                                type="text"
+                                className="w-full bg-gray-800 text-gray-100 border border-gray-600 rounded-md p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter target (e.g., /app/user_service.py, ProcessID:1234, suspicious_url.com)"
+                                value={scanInput}
+                                onChange={(e) => setScanInput(e.target.value)}
+                            />
+                            <button
+                                onClick={runOphanimScan}
+                                className="btn-primary w-full"
+                                disabled={scanLoading}
+                            >
+                                {scanLoading ? (
+                                    <span className="flex items-center justify-center">
+                                        <i className="fas fa-spinner fa-spin mr-2"></i> Scanning...
+                                    </span>
+                                ) : (
+                                    <>
+                                        <i className="fas fa-shield-alt mr-2"></i> Run Ophanim Scan
+                                    </>
+                                )}
+                            </button>
+                            {scanResult && (
+                                <div className="mt-4 p-3 bg-gray-900 rounded-md border border-gray-700 text-sm overflow-auto max-h-40">
+                                    <h4 className="font-semibold text-green-400 mb-2">Scan Report:</h4>
+                                    <pre className="whitespace-pre-wrap text-gray-300">{scanResult}</pre>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Hummingbird Pencil Beak Stylus Tool */}
+                        <div className="bg-gray-700 p-5 rounded-lg border border-gray-600">
+                            <h3 className="text-xl font-medium text-blue-300 mb-3 flex items-center"><i className="fas fa-feather-alt mr-2"></i>Hummingbird Targeted Analysis</h3>
+                            <p className="text-gray-400 mb-4 text-sm">Execute a precise, granular analysis on a specific network segment, process, or data artifact.</p>
+                            <input
+                                type="text"
+                                className="w-full bg-gray-800 text-gray-100 border border-gray-600 rounded-md p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter precise location (e.g., NetSession:XYZ, MemoryAddr:0xABC, File:malware.dat)"
+                                value={targetedLocation}
+                                onChange={(e) => setTargetedLocation(e.target.value)}
+                            />
+                            <button
+                                onClick={runHummingbirdAnalysis}
+                                className="btn-primary w-full"
+                                disabled={targetedLoading}
+                            >
+                                {targetedLoading ? (
+                                    <span className="flex items-center justify-center">
+                                        <i className="fas fa-spinner fa-spin mr-2"></i> Analyzing...
+                                    </span>
+                                ) : (
+                                    <>
+                                        <i className="fas fa-compass mr-2"></i> Perform Hummingbird Analysis
+                                    </>
+                                )}
+                            </button>
+                            {targetedResult && (
+                                <div className="mt-4 p-3 bg-gray-900 rounded-md border border-gray-700 text-sm overflow-auto max-h-40">
+                                    <h4 className="font-semibold text-yellow-300 mb-2">Analysis Report:</h4>
+                                    <pre className="whitespace-pre-wrap text-gray-300">{targetedResult}</pre>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Other Mock Tools */}
+                        <div className="bg-gray-700 p-5 rounded-lg border border-gray-600">
+                            <h3 className="text-xl font-medium text-blue-300 mb-3 flex items-center"><i className="fas fa-ban mr-2"></i>Block IP Address</h3>
+                            <p className="text-gray-400 mb-4 text-sm">Instantly block suspicious IP addresses at the perimeter firewall.</p>
+                            <input
+                                type="text"
+                                className="w-full bg-gray-800 text-gray-100 border border-gray-600 rounded-md p-3 mb-4"
+                                placeholder="e.g., 192.168.1.100"
+                            />
+                            <button className="btn-secondary w-full"><i className="fas fa-lock mr-2"></i>Block IP</button>
+                        </div>
+                        <div className="bg-gray-700 p-5 rounded-lg border border-gray-600">
+                            <h3 className="text-xl font-medium text-blue-300 mb-3 flex items-center"><i className="fas fa-robot mr-2"></i>Deploy Honeypot VM</h3>
+                            <p className="text-gray-400 mb-4 text-sm">Spin up a new virtual machine honeypot to attract and analyze threats.</p>
+                            <button className="btn-secondary w-full"><i className="fas fa-plus-circle mr-2"></i>Deploy VM</button>
+                        </div>
+                    </div>
+                )}
+            </section>
+
+            {/* Render the HermesLog component */}
+            <HermesLog
+                isVisible={showHermesLog}
+                toggleVisibility={() => setShowHermesLog(!showHermesLog)}
+            />
+        </div>
+    );
+};
+
+export default App;
+
+How it works:
+ * HermesLog.js Component:
+   * useState(initialHermesErrands): Holds an array of log entries. I've pre-populated it with some example "errands."
+   * useEffect for Simulation: A setInterval is used to add a new simulated errand every 10 seconds. In a real application, this data would come from a backend API or a logging service that your "Hermes Proxy" (backend) pushes data to.
+   * useRef for Scrolling: logContainerRef ensures that the log automatically scrolls to the bottom when new entries are added, just like a real-time log.
+   * isVisible Prop: This boolean prop controls the component's visibility.
+   * toggleVisibility Prop: A function passed from App.js to change the isVisible state.
+   * CSS Styling (<style> tag):
+     * position: fixed; bottom: 20px; right: 20px;: Positions the tile in the bottom-right corner of the viewport.
+     * transition: transform 0.3s ease-out, opacity 0.3s ease-out;: This is the key for the "snap folding" visual effect. When the hidden class is applied, it will smoothly scale down and fade out.
+     * .hermes-log-container.hidden: Defines the hidden state with transform: scale(0.8) translateY(50px); opacity: 0; pointer-events: none;. pointer-events: none; is crucial so it doesn't block clicks when invisible.
+     * Styles for log entries provide visual cues based on status (SUCCESS, PENDING, FAILURE, INFO, WARNING).
+ * App.js Integration:
+   * import HermesLog from './components/HermesLog';: Imports the new component.
+   * const [showHermesLog, setShowHermesLog] = useState(false);: A new state variable to manage the log's visibility.
+   * Toggle Button: A button is added to the header to manually toggle the showHermesLog state, acting as our stand-in for the "finger snap" gesture.
+   * <HermesLog isVisible={showHermesLog} toggleVisibility={() => setShowHermesLog(!showHermesLog)} />: The HermesLog component is rendered at the bottom of App.js, passing its visibility state and a function to toggle it.
+Now, when you run your React app, you'll see a "Toggle Hermes Log" button in the header. Clicking it will make the "Hermes Log" floating tile smoothly appear or disappear from the bottom right of the screen, mimicking that "snap folding" effect. The log will also continuously update with new simulated errands.
