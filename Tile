@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nualang.k0s Tile Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.15/paper-full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-grey background */
+        }
+        canvas {
+            border: 2px solid #3b82f6; /* Blue border */
+            border-radius: 8px; /* Rounded corners */
+            background-color: #ffffff; /* White canvas background */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            display: block; /* Remove extra space below canvas */
+            width: 100%; /* Make canvas responsive */
+            height: auto; /* Maintain aspect ratio */
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #d1d5db; /* Light grey border */
+            border-radius: 5px;
+        }
+        input[type="color"]::-moz-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-moz-color-swatch {
+            border: 1px solid #d1d5db; /* Light grey border */
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 sm:p-8 lg:p-10 rounded-xl shadow-2xl w-full max-w-4xl flex flex-col lg:flex-row gap-6 lg:gap-10 border border-blue-200">
+        <!-- Control Panel -->
+        <div class="lg:w-1/3 flex flex-col gap-5">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Tile Properties (Nualang.k0s Concept)</h2>
+
+            <div class="flex flex-col gap-3">
+                <label for="tileColor" class="font-medium text-gray-700">Tile Base Color:</label>
+                <input type="color" id="tileColor" value="#34D399" class="p-1 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <span class="font-medium text-gray-700">Snapping Points:</span>
+                <div class="flex flex-wrap gap-x-4 gap-y-2">
+                    <label class="inline-flex items-center text-gray-600">
+                        <input type="checkbox" id="snapNorth" checked class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                        <span class="ml-2">North</span>
+                    </label>
+                    <label class="inline-flex items-center text-gray-600">
+                        <input type="checkbox" id="snapEast" checked class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                        <span class="ml-2">East</span>
+                    </label>
+                    <label class="inline-flex items-center text-gray-600">
+                        <input type="checkbox" id="snapSouth" checked class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                        <span class="ml-2">South</span>
+                    </label>
+                    <label class="inline-flex items-center text-gray-600">
+                        <input type="checkbox" id="snapWest" checked class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                        <span class="ml-2">West</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="comicInkEffect" class="font-medium text-gray-700">Comic Ink Outline:</label>
+                <input type="checkbox" id="comicInkEffect" checked class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+            </div>
+
+            <button id="renderButton" class="mt-5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:from-blue-600 hover:to-indigo-700 transition duration-300 transform hover:scale-105 active:scale-95">
+                Render Tile
+            </button>
+        </div>
+
+        <!-- Canvas for Visual Output -->
+        <div class="lg:w-2/3 flex items-center justify-center bg-gray-100 rounded-lg p-2 shadow-inner">
+            <canvas id="tileCanvas" resize class="w-full h-auto max-h-[400px]"></canvas>
+        </div>
+    </div>
+
+    <script type="text/paperscript" canvas="tileCanvas">
+        // paper.js project setup
+        var raster;
+        var rect;
+        var inkPath;
+        var snappingPointsGroup;
+
+        // Function to clear the canvas and redraw the tile
+        function drawTile() {
+            // Clear existing elements
+            project.activeLayer.removeChildren();
+
+            // Get current values from controls
+            var tileColor = document.getElementById('tileColor').value;
+            var snapNorth = document.getElementById('snapNorth').checked;
+            var snapEast = document.getElementById('snapEast').checked;
+            var snapSouth = document.getElementById('snapSouth').checked;
+            var snapWest = document.getElementById('snapWest').checked;
+            var comicInkEffect = document.getElementById('comicInkEffect').checked;
+
+            // Define conceptual tile size (e.g., 32x32 pixels within the canvas view)
+            var tileSize = Math.min(view.size.width, view.size.height) * 0.6; // Scale to fit canvas
+            var center = view.center;
+
+            // 1. Draw the "Pixel Tiled Regolith" Base (conceptual)
+            // We'll simulate a single pixel art block with a solid color.
+            rect = new Path.Rectangle(new Point(center.x - tileSize / 2, center.y - tileSize / 2), new Size(tileSize, tileSize));
+            rect.fillColor = tileColor;
+            rect.strokeColor = '#e0e0e0'; // Light grey border for pixel separation
+            rect.strokeWidth = 0.5;
+
+            // 2. Draw "Snapping Points"
+            if (snappingPointsGroup) {
+                snappingPointsGroup.remove(); // Remove previous group if it exists
+            }
+            snappingPointsGroup = new Group();
+            var snapRadius = tileSize * 0.05; // Size of snapping circles
+            var snapColor = '#ef4444'; // Red for snapping points
+
+            if (snapNorth) {
+                var northPoint = new Path.Circle(new Point(center.x, center.y - tileSize / 2), snapRadius);
+                northPoint.fillColor = snapColor;
+                snappingPointsGroup.addChild(northPoint);
+            }
+            if (snapEast) {
+                var eastPoint = new Path.Circle(new Point(center.x + tileSize / 2, center.y), snapRadius);
+                eastPoint.fillColor = snapColor;
+                snappingPointsGroup.addChild(eastPoint);
+            }
+            if (snapSouth) {
+                var southPoint = new Path.Circle(new Point(center.x, center.y + tileSize / 2), snapRadius);
+                southPoint.fillColor = snapColor;
+                snappingPointsGroup.addChild(southPoint);
+            }
+            if (snapWest) {
+                var westPoint = new Path.Circle(new Point(center.x - tileSize / 2, center.y), snapRadius);
+                westPoint.fillColor = snapColor;
+                snappingPointsGroup.addChild(westPoint);
+            }
+            project.activeLayer.addChild(snappingPointsGroup);
+
+
+            // 3. Apply "Comic Ink Outline" Effect
+            if (comicInkEffect) {
+                // Remove previous ink outline if it exists
+                if (inkPath) {
+                    inkPath.remove();
+                }
+
+                // Create a slightly irregular, thick black outline
+                inkPath = rect.clone(); // Clone the base rectangle path
+                inkPath.segments.forEach(function(segment) {
+                    // Slightly perturb points for a hand-drawn feel
+                    segment.point.x += (Math.random() - 0.5) * tileSize * 0.02;
+                    segment.point.y += (Math.random() - 0.5) * tileSize * 0.02;
+                });
+
+                inkPath.strokeColor = 'black';
+                inkPath.strokeWidth = tileSize * 0.04; // Thicker stroke
+                inkPath.strokeJoin = 'round';
+                inkPath.strokeCap = 'round';
+                inkPath.bringToFront(); // Ensure ink is on top
+                project.activeLayer.addChild(inkPath);
+            }
+            view.draw(); // Redraw the view
+        }
+
+        // Initial draw when the Paper.js script loads
+        window.onload = function() {
+            // Get the canvas element
+            var canvas = document.getElementById('tileCanvas');
+
+            // Attach event listener for the render button
+            var renderButton = document.getElementById('renderButton');
+            if (renderButton) {
+                renderButton.addEventListener('click', drawTile);
+            }
+
+            // Also re-render on window resize to ensure responsiveness
+            view.onResize = function() {
+                drawTile();
+            };
+
+            // Initial render
+            drawTile();
+        };
+
+    </script>
+</body>
+</html>
